@@ -5,7 +5,8 @@ const Booking = require("../models/Booking");
 
 const getTrips = async (req, res) => {
   try {
-    const trips = await Trip.find({ userId: req.user.id }).sort({ createdAt: -1 });
+    const filter = req.user.role === "admin" ? {} : { userId: req.user.id };
+    const trips = await Trip.find(filter).sort({ createdAt: -1 });
     return res.status(200).json({ success: true, data: trips });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
