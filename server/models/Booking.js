@@ -1,0 +1,37 @@
+const mongoose = require("mongoose");
+
+const bookingSchema = new mongoose.Schema(
+  {
+    tripId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Trip",
+      required: true,
+    },
+    bookingType: {
+      type: String,
+      enum: ["Hotel", "Flight", "Transport"],
+      required: true,
+    },
+    bookingName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    checkInDate: {
+      type: Date,
+      required: true,
+    },
+    checkOutDate: {
+      type: Date,
+      required: true,
+    },
+    confirmationNumber: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("Booking", bookingSchema);
