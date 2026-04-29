@@ -41,7 +41,7 @@ const getTripById = async (req, res) => {
 
 const createTrip = async (req, res) => {
   try {
-    const { tripName, destination, startDate, endDate } = req.body;
+    const { tripName, destination, startDate, endDate, budget, numberOfPeople } = req.body;
 
     if (!tripName || !destination || !startDate || !endDate) {
       return res.status(400).json({
@@ -56,6 +56,8 @@ const createTrip = async (req, res) => {
       destination,
       startDate,
       endDate,
+      budget: budget || 0,
+      numberOfPeople: numberOfPeople || 1,
     });
 
     return res.status(201).json({ success: true, data: trip });
@@ -76,11 +78,13 @@ const updateTrip = async (req, res) => {
       return res.status(404).json({ success: false, message: "Trip not found" });
     }
 
-    const { tripName, destination, startDate, endDate } = req.body;
+    const { tripName, destination, startDate, endDate, budget, numberOfPeople } = req.body;
     if (tripName !== undefined) trip.tripName = tripName;
     if (destination !== undefined) trip.destination = destination;
     if (startDate !== undefined) trip.startDate = startDate;
     if (endDate !== undefined) trip.endDate = endDate;
+    if (budget !== undefined) trip.budget = budget;
+    if (numberOfPeople !== undefined) trip.numberOfPeople = numberOfPeople;
 
     const updatedTrip = await trip.save();
     return res.status(200).json({ success: true, data: updatedTrip });

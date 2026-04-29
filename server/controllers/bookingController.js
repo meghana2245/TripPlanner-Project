@@ -23,14 +23,21 @@ const getBookingsByTrip = async (req, res) => {
 
 const createBooking = async (req, res) => {
   try {
-    const { tripId, bookingType, bookingName, checkInDate, checkOutDate, confirmationNumber } =
-      req.body;
+    const {
+      tripId,
+      bookingType,
+      transportMode,
+      bookingName,
+      checkInDate,
+      checkOutDate,
+      cost,
+      confirmationNumber,
+    } = req.body;
 
-    if (!tripId || !bookingType || !bookingName || !checkInDate || !checkOutDate) {
+    if (!tripId || !bookingType || !bookingName || !checkInDate || !checkOutDate || cost === undefined) {
       return res.status(400).json({
         success: false,
-        message:
-          "tripId, bookingType, bookingName, checkInDate, and checkOutDate are required",
+        message: "tripId, bookingType, bookingName, checkInDate, checkOutDate, and cost are required",
       });
     }
 
@@ -46,10 +53,12 @@ const createBooking = async (req, res) => {
     const booking = await Booking.create({
       tripId,
       bookingType,
+      transportMode: bookingType === "Transport" ? (transportMode || "") : "",
       bookingName,
       checkInDate,
       checkOutDate,
-      confirmationNumber,
+      cost: Number(cost) || 0,
+      confirmationNumber: confirmationNumber || "",
     });
 
     return res.status(201).json({ success: true, data: booking });
@@ -75,11 +84,14 @@ const updateBooking = async (req, res) => {
       return res.status(403).json({ success: false, message: "Access denied" });
     }
 
-    const { bookingType, bookingName, checkInDate, checkOutDate, confirmationNumber } = req.body;
+    const { bookingType, transportMode, bookingName, checkInDate, checkOutDate, cost, confirmationNumber } = req.body;
     if (bookingType !== undefined) booking.bookingType = bookingType;
+    if (bookingType === "Transport" && transportMode !== undefined) booking.transportMode = transportMode;
+    if (bookingType === "Hotel") booking.transportMode = "";
     if (bookingName !== undefined) booking.bookingName = bookingName;
     if (checkInDate !== undefined) booking.checkInDate = checkInDate;
     if (checkOutDate !== undefined) booking.checkOutDate = checkOutDate;
+    if (cost !== undefined) booking.cost = Number(cost);
     if (confirmationNumber !== undefined) booking.confirmationNumber = confirmationNumber;
 
     const updatedBooking = await booking.save();

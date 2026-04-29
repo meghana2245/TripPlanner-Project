@@ -16,15 +16,19 @@ const activitySchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    location: {
+    placeName: {
       type: String,
       required: true,
       trim: true,
     },
-    description: {
+    notes: {
       type: String,
       trim: true,
       default: "",
+    },
+    cost: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true }

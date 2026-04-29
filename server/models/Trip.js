@@ -25,6 +25,14 @@ const tripSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    budget: {
+      type: Number,
+      default: 0,
+    },
+    numberOfPeople: {
+      type: Number,
+      default: 1,
+    },
   },
   { timestamps: true }
 );

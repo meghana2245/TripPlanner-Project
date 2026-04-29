@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Plane, Plus, Briefcase, Calendar, Clock } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import Navbar from "../components/Navbar";
@@ -13,10 +14,15 @@ import { usePageTitle } from "../hooks/usePageTitle";
 export default function Dashboard() {
   usePageTitle("Dashboard");
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTrip, setEditTrip] = useState(null);
+  // Pre-seeded destination from query param
+  const [preDestination, setPreDestination] = useState("");
+  const [preDestinationId, setPreDestinationId] = useState("");
 
   const fetchTrips = useCallback(async () => {
     try {
@@ -29,13 +35,27 @@ export default function Dashboard() {
 
   useEffect(() => { fetchTrips(); }, [fetchTrips]);
 
+  // Open modal with pre-seeded destination if query params exist
+  useEffect(() => {
+    const dest = searchParams.get("destination");
+    const destId = searchParams.get("destinationId");
+    if (dest) {
+      setPreDestination(dest);
+      setPreDestinationId(destId || "");
+      setEditTrip(null);
+      setModalOpen(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
+
   const now = new Date();
   const upcoming = trips.filter((t) => new Date(t.startDate) >= now).length;
   const past = trips.filter((t) => new Date(t.endDate) < now).length;
 
-  const openCreate = () => { setEditTrip(null); setModalOpen(true); };
-  const openEdit = (trip) => { setEditTrip(trip); setModalOpen(true); };
+  const openCreate = () => { setPreDestination(""); setPreDestinationId(""); setEditTrip(null); setModalOpen(true); };
+  const openEdit = (trip) => { setPreDestination(""); setPreDestinationId(""); setEditTrip(trip); setModalOpen(true); };
   const handleDelete = (id) => setTrips((prev) => prev.filter((t) => t._id !== id));
+  const handleClose = () => { setModalOpen(false); setEditTrip(null); setPreDestination(""); setPreDestinationId(""); };
 
   const stats = [
     { label: "Total Trips", value: trips.length, icon: Briefcase, color: "teal" },
@@ -49,7 +69,7 @@ export default function Dashboard() {
       <UpcomingTripBanner trips={trips} />
 
       <PageTransition>
-        {/* Hero welcome banner */}
+        {/* Hero */}
         <div className="relative pt-16 overflow-hidden">
           <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1920&q=80)" }} />
           <div className="absolute inset-0 bg-gradient-to-b from-slate-900/70 via-slate-900/60 to-slate-900" />
@@ -114,7 +134,14 @@ export default function Dashboard() {
         <Plus className="w-6 h-6" />
       </button>
 
-      <TripModal isOpen={modalOpen} onClose={() => { setModalOpen(false); setEditTrip(null); }} onSuccess={fetchTrips} existingTrip={editTrip} />
+      <TripModal
+        isOpen={modalOpen}
+        onClose={handleClose}
+        onSuccess={fetchTrips}
+        existingTrip={editTrip}
+        preDestination={preDestination}
+        preDestinationId={preDestinationId}
+      />
     </div>
   );
 }

@@ -9,8 +9,13 @@ const bookingSchema = new mongoose.Schema(
     },
     bookingType: {
       type: String,
-      enum: ["Hotel", "Flight", "Transport"],
+      enum: ["Hotel", "Transport"],
       required: true,
+    },
+    transportMode: {
+      type: String,
+      enum: ["Bus", "Train", "Car", "Flight", ""],
+      default: "",
     },
     bookingName: {
       type: String,
@@ -24,6 +29,11 @@ const bookingSchema = new mongoose.Schema(
     checkOutDate: {
       type: Date,
       required: true,
+    },
+    cost: {
+      type: Number,
+      required: true,
+      default: 0,
     },
     confirmationNumber: {
       type: String,

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Plane, LogOut, Menu, Globe, Briefcase, Users, CalendarCheck, MapPin, Search, Plus, Pencil, Trash2, BarChart2, PieChart } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Plane, LogOut, Menu, Globe, Briefcase, Users, CalendarCheck, MapPin, Search, Plus, Pencil, Trash2, BarChart2, PieChart, Zap, Lock, Eye, EyeOff, Loader2, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
@@ -75,11 +75,25 @@ export default function AdminDashboard() {
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [animated, setAnimated] = useState(false);
+  const [barsAnimated, setBarsAnimated] = useState(false);
+
+  // Settings / Password change state
+  const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [pwLoading, setPwLoading] = useState(false);
+  const [showPw, setShowPw] = useState({ current: false, new: false, confirm: false });
 
   useEffect(() => {
     setAnimated(false);
     const t = setTimeout(() => setAnimated(true), 100);
     return () => clearTimeout(t);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'reports') {
+      setBarsAnimated(false);
+      const timer = setTimeout(() => setBarsAnimated(true), 150);
+      return () => clearTimeout(timer);
+    }
   }, [activeTab]);
 
   const fetchData = async () => {
@@ -138,17 +152,57 @@ export default function AdminDashboard() {
     return start <= today && end >= today;
   }).length;
 
+  // Chart data — computed once, updated when trips changes
+  const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+
+  const monthlyCount = useMemo(() => {
+    const counts = Array(12).fill(0);
+    trips.forEach(t => {
+      if (t.startDate) {
+        const d = new Date(t.startDate);
+        if (!isNaN(d.getTime())) {
+          counts[d.getMonth()]++;
+        }
+      }
+    });
+    return counts;
+  }, [trips]);
+
+  const maxMonthly = Math.max(...monthlyCount, 1);
+  const hasAnyTrips = monthlyCount.some(c => c > 0);
+
   const handleLogout = () => {
     logout();
     toast.success("Logged out successfully");
   };
 
-  const tabs = ["overview", "destinations", "trips", "reports"];
+  const handlePwChange = async (e) => {
+    e.preventDefault();
+    if (!pwForm.currentPassword || !pwForm.newPassword || !pwForm.confirmPassword)
+      return toast.error("All fields are required");
+    if (pwForm.newPassword.length < 6)
+      return toast.error("New password must be at least 6 characters");
+    if (pwForm.newPassword !== pwForm.confirmPassword)
+      return toast.error("Passwords do not match");
+    setPwLoading(true);
+    try {
+      await api.put("/auth/password", { currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
+      toast.success("Password changed successfully! 🔐");
+      setPwForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to change password");
+    } finally { setPwLoading(false); }
+  };
+
+  const tabs = ["overview", "destinations", "trips", "reports", "settings"];
   const tabLabels = {
     overview: "Overview",
     destinations: "Destinations",
     trips: "All Trips",
-    reports: "Reports"
+    reports: "Reports",
+    settings: "Settings",
   };
 
   if (loading) {
@@ -409,20 +463,40 @@ export default function AdminDashboard() {
 
                     <div className="absolute bottom-0 left-0 right-0 p-5">
                       <h3 className="text-xl font-bold text-white mb-1 group-hover:text-teal-300 transition-colors">{dest.destinationName}</h3>
-                      <p className="text-sm text-slate-300 line-clamp-2 mb-3 leading-relaxed">{dest.description}</p>
-                      
-                      <div className="flex flex-wrap gap-1.5">
-                        {dest.recommendedPlaces?.slice(0, 3).map((place, idx) => (
+                      <p className="text-sm text-slate-300 line-clamp-1 mb-2 leading-relaxed">{dest.description}</p>
+
+                      {/* Recommended Places */}
+                      <div className="flex flex-wrap gap-1.5 mb-1.5">
+                        {dest.recommendedPlaces?.slice(0, 2).map((place, idx) => (
                           <span key={idx} className="bg-teal-500/30 text-teal-200 border border-teal-500/40 rounded-full px-2.5 py-0.5 text-xs">
                             {place}
                           </span>
                         ))}
-                        {dest.recommendedPlaces?.length > 3 && (
+                        {dest.recommendedPlaces?.length > 2 && (
                           <span className="bg-slate-800/60 text-slate-300 border border-slate-600 rounded-full px-2.5 py-0.5 text-xs">
-                            +{dest.recommendedPlaces.length - 3} more
+                            +{dest.recommendedPlaces.length - 2} more
                           </span>
                         )}
                       </div>
+
+                      {/* Destination Activities */}
+                      {dest.destinationActivities?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          <span className="flex items-center gap-0.5 text-orange-400 text-xs">
+                            <Zap size={10} /> Activities:
+                          </span>
+                          {dest.destinationActivities.slice(0, 2).map((act, idx) => (
+                            <span key={idx} className="bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded-full px-2 py-0.5 text-xs">
+                              {act}
+                            </span>
+                          ))}
+                          {dest.destinationActivities.length > 2 && (
+                            <span className="bg-slate-800/60 text-slate-400 border border-slate-600 rounded-full px-2 py-0.5 text-xs">
+                              +{dest.destinationActivities.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -555,16 +629,6 @@ export default function AdminDashboard() {
         {/* REPORTS TAB */}
         {/* ==================================================== */}
         {activeTab === "reports" && (() => {
-          // Monthly trip counts
-          const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-          const monthlyCount = Array(12).fill(0);
-          trips.forEach(t => {
-            const m = new Date(t.startDate).getMonth();
-            if (!isNaN(m)) monthlyCount[m]++;
-          });
-          const maxMonthly = Math.max(...monthlyCount, 1);
-          const allZeroMonths = monthlyCount.every(c => c === 0);
-
           // Destination frequency
           const destCount = {};
           trips.forEach(t => {
@@ -635,40 +699,55 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* SECTION 2 - Trips Per Month */}
+              {/* SECTION 2 - Trips Per Month (fixed pixel-height bar chart) */}
               <div className="mt-8 bg-slate-800/40 rounded-2xl border border-white/5 p-6 animate-slideUp delay-300">
-                <div className="flex items-center gap-2 mb-6">
-                  <BarChart2 className="text-teal-400" size={20} />
-                  <span className="font-semibold text-white">Trips Per Month</span>
-                  <span className="text-xs bg-slate-700 px-2 py-0.5 rounded text-slate-400 ml-2">
-                    {today.getFullYear()}
-                  </span>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <BarChart2 className="text-teal-400" size={20} />
+                    <span className="font-semibold text-white">Trips Per Month</span>
+                  </div>
+                  <span className="text-xs bg-slate-700 px-2 py-1 rounded text-slate-400">{currentYear}</span>
                 </div>
 
-                {allZeroMonths ? (
-                  <div className="py-12 text-center">
-                    <BarChart2 className="size-10 text-slate-600 mx-auto mb-3" />
-                    <p className="text-slate-400">No trip data yet</p>
-                  </div>
-                ) : (
-                  <div className="h-52 flex items-end gap-1.5 px-2">
+                {hasAnyTrips ? (
+                  <div className="flex items-end gap-1 h-48 px-1">
                     {monthlyCount.map((count, i) => (
-                      <div key={monthLabels[i]} className="flex flex-col items-center gap-1 flex-1">
-                        <span className="text-xs text-slate-400 mb-1 h-4">
+                      <div key={i} className="flex flex-col items-center flex-1 h-full justify-end gap-1">
+                        {/* Count label */}
+                        <span className="text-xs text-slate-400" style={{ minHeight: '16px' }}>
                           {count > 0 ? count : ''}
                         </span>
-                        <div 
-                          className={`w-full rounded-t-md transition-all duration-700 cursor-pointer ${
-                            count > 0 
-                              ? (i === today.getMonth() ? 'bg-gradient-to-t from-teal-600 to-teal-300 hover:from-teal-500 hover:to-teal-200' : 'bg-gradient-to-t from-teal-700 to-teal-400 hover:from-teal-600 hover:to-teal-300')
-                              : 'bg-slate-700/50'
-                          }`}
-                          style={{ height: animated ? `${Math.max((count / maxMonthly) * 100, 4)}%` : '0%' }}
-                          title={`${monthLabels[i]}: ${count} trips`}
-                        ></div>
-                        <span className="text-xs text-slate-500 mt-1">{monthLabels[i]}</span>
+                        {/* Bar */}
+                        <div
+                          className="w-full rounded-t-md transition-all duration-700 ease-out"
+                          style={{
+                            height: barsAnimated
+                              ? `${Math.max((count / maxMonthly) * 160, count > 0 ? 8 : 4)}px`
+                              : '4px',
+                            background: i === currentMonth
+                              ? 'linear-gradient(to top, #0f766e, #2dd4bf)'
+                              : count > 0
+                                ? 'linear-gradient(to top, #0d9488, #5eead4)'
+                                : '#1e293b',
+                            opacity: count > 0 ? 1 : 0.4,
+                          }}
+                          title={`${monthLabels[i]}: ${count} trip${count !== 1 ? 's' : ''}`}
+                        />
+                        {/* Month label */}
+                        <span
+                          className="text-xs mt-1"
+                          style={{ color: i === currentMonth ? '#2dd4bf' : '#64748b' }}
+                        >
+                          {monthLabels[i]}
+                        </span>
                       </div>
                     ))}
+                  </div>
+                ) : (
+                  <div className="h-48 flex flex-col items-center justify-center gap-3">
+                    <BarChart2 size={40} className="text-slate-600" />
+                    <p className="text-slate-500 text-sm">No trip data yet</p>
+                    <p className="text-slate-600 text-xs">Trips will appear here once users start planning</p>
                   </div>
                 )}
               </div>
@@ -793,6 +872,74 @@ export default function AdminDashboard() {
         })()}
 
       </main>
+
+      {/* SETTINGS TAB — rendered outside main for clean layout */}
+      {activeTab === "settings" && (
+        <main className="pt-24 lg:pt-20 px-4 sm:px-6 pb-8 max-w-3xl mx-auto min-h-screen">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Settings</h1>
+            <p className="text-slate-400 mt-1">Manage your admin account security</p>
+          </div>
+
+          {/* Admin Info Card */}
+          <div className="mt-8 bg-slate-800/60 border border-white/10 rounded-2xl p-6 flex items-center gap-5">
+            <div className="w-16 h-16 rounded-full bg-teal-600 flex items-center justify-center text-white text-2xl font-bold shadow-inner shrink-0">
+              {(user?.name || "A").charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <p className="text-white font-bold text-lg">{user?.name || "Admin"}</p>
+              <p className="text-slate-400 text-sm">{user?.email || ""}</p>
+              <span className="mt-1 inline-flex items-center gap-1 text-xs bg-teal-500/20 text-teal-400 border border-teal-500/30 px-2.5 py-0.5 rounded-full">
+                <Settings size={11} /> Admin Account
+              </span>
+            </div>
+          </div>
+
+          {/* Change Password Card */}
+          <div className="mt-6 bg-slate-800/60 border border-white/10 rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <Lock className="w-5 h-5 text-teal-400" />
+              <h2 className="text-white font-bold text-lg">Change Password</h2>
+            </div>
+            <form onSubmit={handlePwChange} className="space-y-4">
+              {[
+                { key: "currentPassword", label: "Current Password", showKey: "current" },
+                { key: "newPassword",     label: "New Password",     showKey: "new" },
+                { key: "confirmPassword", label: "Confirm New Password", showKey: "confirm" },
+              ].map(({ key, label, showKey }) => (
+                <div key={key}>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">{label}</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input
+                      type={showPw[showKey] ? "text" : "password"}
+                      value={pwForm[key]}
+                      onChange={(e) => setPwForm((p) => ({ ...p, [key]: e.target.value }))}
+                      placeholder="••••••••"
+                      className="w-full bg-slate-900 border border-slate-700 text-white placeholder-slate-500 rounded-xl pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPw((p) => ({ ...p, [showKey]: !p[showKey] }))}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      {showPw[showKey] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <button
+                type="submit"
+                disabled={pwLoading}
+                className="flex items-center gap-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 active:scale-95 text-white px-6 py-3 rounded-xl text-sm font-medium transition-all"
+              >
+                {pwLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                Change Password
+              </button>
+            </form>
+          </div>
+        </main>
+      )}
 
       {/* DESTINATION MODAL */}
       <DestinationModal

@@ -16,6 +16,20 @@ const destinationSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    destinationActivities: {
+      type: [String],
+      default: [],
+    },
+    sampleItinerary: {
+      type: [
+        {
+          day: { type: Number, required: true },
+          title: { type: String, trim: true, default: "" },
+          activities: { type: [String], default: [] },
+        },
+      ],
+      default: [],
+    },
     imageUrl: {
       type: String,
       trim: true,

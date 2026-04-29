@@ -15,14 +15,12 @@ const getDestinations = async (req, res) => {
 const getDestinationById = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!mongoose.Types.ObjectId.isValid(id))
       return res.status(400).json({ success: false, message: "Invalid destination id" });
-    }
 
     const destination = await Destination.findById(id).populate("createdBy", "name email role");
-    if (!destination) {
+    if (!destination)
       return res.status(404).json({ success: false, message: "Destination not found" });
-    }
 
     return res.status(200).json({ success: true, data: destination });
   } catch (error) {
@@ -32,19 +30,18 @@ const getDestinationById = async (req, res) => {
 
 const createDestination = async (req, res) => {
   try {
-    const { destinationName, description, recommendedPlaces, imageUrl } = req.body;
+    const { destinationName, description, recommendedPlaces, destinationActivities, sampleItinerary, imageUrl } = req.body;
 
     if (!destinationName || !description) {
-      return res.status(400).json({
-        success: false,
-        message: "destinationName and description are required",
-      });
+      return res.status(400).json({ success: false, message: "destinationName and description are required" });
     }
 
     const destination = await Destination.create({
       destinationName,
       description,
       recommendedPlaces: Array.isArray(recommendedPlaces) ? recommendedPlaces : [],
+      destinationActivities: Array.isArray(destinationActivities) ? destinationActivities : [],
+      sampleItinerary: Array.isArray(sampleItinerary) ? sampleItinerary : [],
       imageUrl,
       createdBy: req.user.id,
     });
@@ -58,21 +55,22 @@ const createDestination = async (req, res) => {
 const updateDestination = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!mongoose.Types.ObjectId.isValid(id))
       return res.status(400).json({ success: false, message: "Invalid destination id" });
-    }
 
     const destination = await Destination.findById(id);
-    if (!destination) {
+    if (!destination)
       return res.status(404).json({ success: false, message: "Destination not found" });
-    }
 
-    const { destinationName, description, recommendedPlaces, imageUrl } = req.body;
+    const { destinationName, description, recommendedPlaces, destinationActivities, sampleItinerary, imageUrl } = req.body;
     if (destinationName !== undefined) destination.destinationName = destinationName;
     if (description !== undefined) destination.description = description;
-    if (recommendedPlaces !== undefined) {
+    if (recommendedPlaces !== undefined)
       destination.recommendedPlaces = Array.isArray(recommendedPlaces) ? recommendedPlaces : [];
-    }
+    if (destinationActivities !== undefined)
+      destination.destinationActivities = Array.isArray(destinationActivities) ? destinationActivities : [];
+    if (sampleItinerary !== undefined)
+      destination.sampleItinerary = Array.isArray(sampleItinerary) ? sampleItinerary : [];
     if (imageUrl !== undefined) destination.imageUrl = imageUrl;
 
     const updatedDestination = await destination.save();
@@ -85,29 +83,18 @@ const updateDestination = async (req, res) => {
 const deleteDestination = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!mongoose.Types.ObjectId.isValid(id))
       return res.status(400).json({ success: false, message: "Invalid destination id" });
-    }
 
     const destination = await Destination.findById(id);
-    if (!destination) {
+    if (!destination)
       return res.status(404).json({ success: false, message: "Destination not found" });
-    }
 
     await Destination.deleteOne({ _id: destination._id });
-    return res.status(200).json({
-      success: true,
-      data: { message: "Destination deleted successfully" },
-    });
+    return res.status(200).json({ success: true, data: { message: "Destination deleted successfully" } });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
 
-module.exports = {
-  getDestinations,
-  getDestinationById,
-  createDestination,
-  updateDestination,
-  deleteDestination,
-};
+module.exports = { getDestinations, getDestinationById, createDestination, updateDestination, deleteDestination };

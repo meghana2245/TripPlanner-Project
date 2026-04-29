@@ -13,6 +13,7 @@ import TripDetails from "./pages/TripDetails";
 import TripHistory from "./pages/TripHistory";
 import UserProfile from "./pages/UserProfile";
 import DestinationPage from "./pages/DestinationPage";
+import DestinationDetailPage from "./pages/DestinationDetailPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
@@ -33,6 +34,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/destinations" element={<DestinationPage />} />
+          <Route path="/destinations/:id" element={<DestinationDetailPage />} />
 
           {/* Protected user routes */}
           <Route element={<PrivateRoute />}>
