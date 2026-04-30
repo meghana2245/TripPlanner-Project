@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, MapPin, Zap, Calendar, Users, ArrowRight,
+  ArrowLeft, Calendar, Users, ArrowRight,
   CheckCircle2, Plane, ChevronDown, ChevronUp
 } from "lucide-react";
 import { toast } from "sonner";
@@ -10,20 +10,7 @@ import Navbar from "../components/Navbar";
 import PageTransition from "../components/PageTransition";
 import { useAuth } from "../context/AuthContext";
 import { usePageTitle } from "../hooks/usePageTitle";
-
-const DEST_IMAGES = {
-  default: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1200&q=80",
-  Goa: "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=1200&q=80",
-  Paris: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1200&q=80",
-  Tokyo: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1200&q=80",
-  "New York": "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=1200&q=80",
-  Bali: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200&q=80",
-};
-
-const getDestImage = (name = "") => {
-  const key = Object.keys(DEST_IMAGES).find((k) => name.toLowerCase().includes(k.toLowerCase()));
-  return key ? DEST_IMAGES[key] : DEST_IMAGES.default;
-};
+import { getDestinationImage } from "../utils/getDestinationImage";
 
 export default function DestinationDetailPage() {
   const { id } = useParams();
@@ -93,7 +80,7 @@ export default function DestinationDetailPage() {
         <div className="relative pt-16 overflow-hidden">
           <div
             className="absolute inset-0 bg-cover bg-center transition-transform duration-700"
-            style={{ backgroundImage: `url(${getDestImage(dest.destinationName)})` }}
+            style={{ backgroundImage: `url(${dest.imageUrl || getDestinationImage(dest.destinationName)})` }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-slate-900" />
           <div className="relative z-10 max-w-4xl mx-auto px-6 py-20">
@@ -121,40 +108,6 @@ export default function DestinationDetailPage() {
 
         <div className="max-w-4xl mx-auto px-6 py-10 pb-20 space-y-10">
 
-          {/* Recommended Places + Activities */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {dest.recommendedPlaces?.length > 0 && (
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <MapPin className="w-5 h-5 text-teal-400" />
-                  <h2 className="text-white font-semibold text-lg">Places to Visit</h2>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {dest.recommendedPlaces.map((p) => (
-                    <span key={p} className="bg-teal-500/15 border border-teal-500/25 text-teal-300 text-sm px-3 py-1.5 rounded-full flex items-center gap-1.5">
-                      <MapPin className="w-3 h-3" /> {p}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {dest.destinationActivities?.length > 0 && (
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Zap className="w-5 h-5 text-orange-400" />
-                  <h2 className="text-white font-semibold text-lg">Things To Do</h2>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {dest.destinationActivities.map((a) => (
-                    <span key={a} className="bg-orange-500/15 border border-orange-500/25 text-orange-300 text-sm px-3 py-1.5 rounded-full">
-                      {a}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* Sample Itinerary */}
           {hasItinerary && (

@@ -30,7 +30,7 @@ const getDestinationById = async (req, res) => {
 
 const createDestination = async (req, res) => {
   try {
-    const { destinationName, description, recommendedPlaces, destinationActivities, sampleItinerary, imageUrl } = req.body;
+    const { destinationName, description, sampleItinerary, imageUrl } = req.body;
 
     if (!destinationName || !description) {
       return res.status(400).json({ success: false, message: "destinationName and description are required" });
@@ -39,8 +39,6 @@ const createDestination = async (req, res) => {
     const destination = await Destination.create({
       destinationName,
       description,
-      recommendedPlaces: Array.isArray(recommendedPlaces) ? recommendedPlaces : [],
-      destinationActivities: Array.isArray(destinationActivities) ? destinationActivities : [],
       sampleItinerary: Array.isArray(sampleItinerary) ? sampleItinerary : [],
       imageUrl,
       createdBy: req.user.id,
@@ -62,13 +60,9 @@ const updateDestination = async (req, res) => {
     if (!destination)
       return res.status(404).json({ success: false, message: "Destination not found" });
 
-    const { destinationName, description, recommendedPlaces, destinationActivities, sampleItinerary, imageUrl } = req.body;
+    const { destinationName, description, sampleItinerary, imageUrl } = req.body;
     if (destinationName !== undefined) destination.destinationName = destinationName;
     if (description !== undefined) destination.description = description;
-    if (recommendedPlaces !== undefined)
-      destination.recommendedPlaces = Array.isArray(recommendedPlaces) ? recommendedPlaces : [];
-    if (destinationActivities !== undefined)
-      destination.destinationActivities = Array.isArray(destinationActivities) ? destinationActivities : [];
     if (sampleItinerary !== undefined)
       destination.sampleItinerary = Array.isArray(sampleItinerary) ? sampleItinerary : [];
     if (imageUrl !== undefined) destination.imageUrl = imageUrl;

@@ -15,6 +15,7 @@ import UserProfile from "./pages/UserProfile";
 import DestinationPage from "./pages/DestinationPage";
 import DestinationDetailPage from "./pages/DestinationDetailPage";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminProfile from "./pages/AdminProfile";
 import NotFound from "./pages/NotFound";
 
 function ScrollHandler() {
@@ -47,6 +48,7 @@ function App() {
           {/* Admin-only routes */}
           <Route element={<AdminRoute />}>
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/profile" element={<AdminProfile />} />
           </Route>
 
           {/* 404 */}

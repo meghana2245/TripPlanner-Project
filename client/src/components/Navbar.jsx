@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plane, LogOut, Menu, X, ChevronDown, Clock, Globe, Shield } from "lucide-react";
+import { Plane, LogOut, Menu, X, ChevronDown, Clock, Globe, Shield, UserCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 
@@ -25,6 +25,13 @@ export default function Navbar() {
     logout();
     toast.success("See you soon! 👋");
     navigate("/");
+  };
+
+  const goToProfile = () => {
+    setDropdownOpen(false);
+    setMobileOpen(false);
+    // Route to the correct profile based on role
+    navigate(user?.role === "admin" ? "/admin/profile" : "/profile");
   };
 
   const initials = user?.name
@@ -67,22 +74,35 @@ export default function Navbar() {
                   onClick={() => setDropdownOpen((p) => !p)}
                   className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-full pl-1 pr-3 py-1 transition-colors"
                 >
-                  <div className="w-7 h-7 rounded-full bg-teal-600 flex items-center justify-center text-white text-xs font-bold">
-                    {initials}
+                  <div className="w-7 h-7 rounded-full overflow-hidden bg-teal-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                    {user?.profilePicture
+                      ? <img src={user.profilePicture} alt="avatar" className="w-full h-full object-cover" />
+                      : initials
+                    }
                   </div>
                   <span className="text-white text-sm">{user?.name?.split(" ")[0]}</span>
                   <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-44 bg-slate-800 border border-slate-700 rounded-xl shadow-xl overflow-hidden">
+                  <div className="absolute right-0 mt-2 w-52 bg-slate-800 border border-slate-700 rounded-xl shadow-xl overflow-hidden">
+                    {/* User info */}
                     <div className="px-4 py-3 border-b border-slate-700">
                       <p className="text-white text-sm font-medium truncate">{user?.name}</p>
                       <p className="text-slate-500 text-xs truncate">{user?.email}</p>
                     </div>
+                    {/* View Profile */}
+                    <button
+                      onClick={goToProfile}
+                      className="w-full flex items-center gap-2.5 px-4 py-3 text-slate-300 hover:bg-slate-700 hover:text-white text-sm transition-colors border-b border-slate-700/50"
+                    >
+                      <UserCircle className="w-4 h-4 text-teal-400" />
+                      View Profile
+                    </button>
+                    {/* Sign out */}
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-4 py-3 text-red-400 hover:bg-slate-700 text-sm transition-colors"
+                      className="w-full flex items-center gap-2.5 px-4 py-3 text-red-400 hover:bg-slate-700 text-sm transition-colors"
                     >
                       <LogOut className="w-4 h-4" />Sign Out
                     </button>
@@ -117,15 +137,20 @@ export default function Navbar() {
             </div>
 
             {user && (
-              <div className="flex items-center gap-3 mb-6 pb-6 border-b border-slate-800">
-                <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold">
-                  {initials}
+              /* Clickable profile section in mobile */
+              <button onClick={goToProfile} className="flex items-center gap-3 mb-6 pb-6 border-b border-slate-800 text-left hover:opacity-80 transition-opacity">
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-teal-600 flex items-center justify-center text-white font-bold shrink-0">
+                  {user?.profilePicture
+                    ? <img src={user.profilePicture} alt="avatar" className="w-full h-full object-cover" />
+                    : initials
+                  }
                 </div>
-                <div>
-                  <p className="text-white font-medium text-sm">{user?.name}</p>
-                  <p className="text-slate-500 text-xs">{user?.email}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-medium text-sm truncate">{user?.name}</p>
+                  <p className="text-slate-500 text-xs truncate">{user?.email}</p>
                 </div>
-              </div>
+                <UserCircle className="w-4 h-4 text-teal-400 shrink-0" />
+              </button>
             )}
 
             <nav className="flex flex-col gap-1 flex-1">
@@ -137,6 +162,9 @@ export default function Navbar() {
                   <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="text-slate-300 hover:text-white px-3 py-2.5 rounded-lg hover:bg-slate-800 transition-colors text-sm">Dashboard</Link>
                   <Link to="/trip-history" onClick={() => setMobileOpen(false)} className="text-slate-300 hover:text-white px-3 py-2.5 rounded-lg hover:bg-slate-800 transition-colors text-sm flex items-center gap-2">
                     <Clock className="w-4 h-4" />Trip History
+                  </Link>
+                  <Link to={user.role === "admin" ? "/admin/profile" : "/profile"} onClick={() => setMobileOpen(false)} className="text-slate-300 hover:text-white px-3 py-2.5 rounded-lg hover:bg-slate-800 transition-colors text-sm flex items-center gap-2">
+                    <UserCircle className="w-4 h-4" />My Profile
                   </Link>
                   {user.role === "admin" && (
                     <Link to="/admin/dashboard" onClick={() => setMobileOpen(false)} className="text-amber-400 hover:text-amber-300 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition-colors text-sm flex items-center gap-2 font-medium">

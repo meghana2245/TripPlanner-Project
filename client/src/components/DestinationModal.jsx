@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Globe, X, FileText, Loader2, Zap, Plus, Trash2, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Globe, X, FileText, Loader2, Plus, Trash2, Calendar, ChevronDown, ChevronUp, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import api from "../services/api";
 
@@ -43,10 +43,7 @@ const TagInput = ({ tags, onAdd, onRemove, inputValue, setInputValue, inputRef, 
 export default function DestinationModal({ isOpen, onClose, onSuccess, existingDestination }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [tags, setTags] = useState([]);
-  const [inputValue, setInputValue] = useState("");
-  const [activityTags, setActivityTags] = useState([]);
-  const [activityInput, setActivityInput] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   // Sample Itinerary
   const [itinerary, setItinerary] = useState([]);
   const [activeTab, setActiveTab] = useState("basic"); // "basic" | "itinerary"
@@ -55,23 +52,18 @@ export default function DestinationModal({ isOpen, onClose, onSuccess, existingD
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const tagInputRef = useRef(null);
-  const activityInputRef = useRef(null);
-
   useEffect(() => {
     if (existingDestination) {
       setName(existingDestination.destinationName || "");
       setDescription(existingDestination.description || "");
-      setTags(existingDestination.recommendedPlaces || []);
-      setActivityTags(existingDestination.destinationActivities || []);
+      setImageUrl(existingDestination.imageUrl || "");
       const itin = existingDestination.sampleItinerary || [];
       setItinerary(itin.map((d) => ({ ...d, activities: d.activities || [] })));
       const exp = {};
       itin.forEach((d) => { exp[d.day] = true; });
       setExpandedDays(exp);
     } else {
-      setName(""); setDescription(""); setTags([]); setInputValue("");
-      setActivityTags([]); setActivityInput(""); setItinerary([]);
+      setName(""); setDescription(""); setImageUrl(""); setItinerary([]);
       setExpandedDays({}); setActiveTab("basic");
     }
     setErrors({});
@@ -123,7 +115,6 @@ export default function DestinationModal({ isOpen, onClose, onSuccess, existingD
     const newErrors = {};
     if (!name.trim()) newErrors.name = "Destination name is required";
     if (!description.trim()) newErrors.description = "Description is required";
-    if (tags.length === 0) newErrors.tags = "Add at least one recommended place";
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); setActiveTab("basic"); return; }
 
     setLoading(true);
@@ -133,8 +124,7 @@ export default function DestinationModal({ isOpen, onClose, onSuccess, existingD
 
     const payload = {
       destinationName: name, description,
-      recommendedPlaces: tags,
-      destinationActivities: activityTags,
+      imageUrl: imageUrl.trim(),
       sampleItinerary: cleanItinerary,
     };
     try {
@@ -232,38 +222,26 @@ export default function DestinationModal({ isOpen, onClose, onSuccess, existingD
                   {errors.description && <p className="text-red-400 text-xs mt-1">{errors.description}</p>}
                 </div>
 
-                {/* Recommended Places */}
+                {/* Image URL */}
                 <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-slate-300">Recommended Places</span>
-                    <span className="text-xs text-slate-500">{tags.length} added</span>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Image URL <span className="text-slate-500 text-xs">(optional)</span></label>
+                  <div className="relative">
+                    <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 size-4" />
+                    <input
+                      type="url"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="https://example.com/image.jpg"
+                      className="w-full bg-slate-700/50 border border-slate-600/50 rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all focus:border-teal-500"
+                    />
                   </div>
-                  <TagInput
-                    tags={tags} inputValue={inputValue} setInputValue={setInputValue}
-                    inputRef={tagInputRef} placeholder="Type a place, press Enter..."
-                    onAdd={(v) => setTags([...tags, v])} onRemove={(i) => setTags(tags.filter((_, j) => j !== i))}
-                    chipClass="bg-teal-500/20 text-teal-300 border border-teal-500/30"
-                    focusClass="focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-500/20"
-                  />
-                  {errors.tags && <p className="text-red-400 text-xs mt-1">{errors.tags}</p>}
-                  <p className="text-xs text-slate-500 mt-1.5">Press Enter or comma to add · Backspace to remove last</p>
+                  {imageUrl && (
+                    <div className="mt-3 h-32 rounded-xl overflow-hidden border border-white/10 bg-slate-800">
+                      <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" onError={(e) => e.target.style.display = 'none'} />
+                    </div>
+                  )}
                 </div>
 
-                {/* Suggested Activities */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-slate-300">Suggested Activities <span className="text-slate-500 text-xs">(optional)</span></span>
-                    <span className="text-xs text-slate-500">{activityTags.length} added</span>
-                  </div>
-                  <TagInput
-                    tags={activityTags} inputValue={activityInput} setInputValue={setActivityInput}
-                    inputRef={activityInputRef} placeholder="e.g. Scuba Diving, Sunset Cruise..."
-                    onAdd={(v) => setActivityTags([...activityTags, v])} onRemove={(i) => setActivityTags(activityTags.filter((_, j) => j !== i))}
-                    chipClass="bg-orange-500/20 text-orange-300 border border-orange-500/30"
-                    focusClass="focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20"
-                  />
-                  <p className="text-xs text-slate-500 mt-1.5">Shown as activity suggestions on the destination page</p>
-                </div>
               </div>
             )}
 

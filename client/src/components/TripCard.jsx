@@ -2,15 +2,8 @@ import { Link } from "react-router-dom";
 import { MapPin, Calendar, Edit2, Trash2, ArrowRight, Users, IndianRupee } from "lucide-react";
 import { toast } from "sonner";
 import api from "../services/api";
+import { getDestinationImage } from "../utils/getDestinationImage";
 
-const IMAGES = [
-  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80",
-  "https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=800&q=80",
-  "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&q=80",
-  "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&q=80",
-  "https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=800&q=80",
-  "https://images.unsplash.com/photo-1488085061387-422e29b40080?w=800&q=80",
-];
 
 const fmt = (d) =>
   new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -22,8 +15,8 @@ const fmtINR = (n) =>
     maximumFractionDigits: 0,
   }).format(n || 0);
 
-export default function TripCard({ trip, index = 0, onEdit, onDelete }) {
-  const image = IMAGES[index % IMAGES.length];
+export default function TripCard({ trip, onEdit, onDelete }) {
+  const image = trip.imageUrl || getDestinationImage(trip.destination);
 
   const handleDelete = async () => {
     if (!window.confirm(`Delete "${trip.tripName}"? This cannot be undone.`)) return;

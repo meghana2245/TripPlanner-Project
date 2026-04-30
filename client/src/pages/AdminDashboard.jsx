@@ -1,31 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Plane, LogOut, Menu, Globe, Briefcase, Users, CalendarCheck, MapPin, Search, Plus, Pencil, Trash2, BarChart2, PieChart, Zap, Lock, Eye, EyeOff, Loader2, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plane, LogOut, Menu, Globe, Briefcase, Users, CalendarCheck, MapPin, Search, Plus, Pencil, Trash2, BarChart2, PieChart, Zap, UserCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import DestinationModal from "../components/DestinationModal";
-
-const DESTINATION_IMAGES = {
-  goa: "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800&q=80",
-  paris: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&q=80",
-  tokyo: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80",
-  "new york": "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800&q=80",
-  bali: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80",
-  london: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&q=80",
-  dubai: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&q=80",
-  default: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&q=80"
-};
-
-const getDestinationImage = (name) => {
-  if (!name) return DESTINATION_IMAGES.default;
-  const lowerName = name.toLowerCase();
-  for (const [key, url] of Object.entries(DESTINATION_IMAGES)) {
-    if (lowerName.includes(key) && key !== 'default') {
-      return url;
-    }
-  }
-  return DESTINATION_IMAGES.default;
-};
+import { getDestinationImage } from "../utils/getDestinationImage";
 
 const formatDate = (dateString) => {
   const options = { month: 'short', day: 'numeric', year: 'numeric' };
@@ -59,9 +39,11 @@ const StatusBadge = ({ status }) => {
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [trips, setTrips] = useState([]);
   const [destinations, setDestinations] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Destinations Tab State
@@ -77,10 +59,7 @@ export default function AdminDashboard() {
   const [animated, setAnimated] = useState(false);
   const [barsAnimated, setBarsAnimated] = useState(false);
 
-  // Settings / Password change state
-  const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
-  const [pwLoading, setPwLoading] = useState(false);
-  const [showPw, setShowPw] = useState({ current: false, new: false, confirm: false });
+
 
   useEffect(() => {
     setAnimated(false);
@@ -99,12 +78,14 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [tripsRes, destRes] = await Promise.all([
+      const [tripsRes, destRes, usersRes] = await Promise.all([
         api.get("/trips"),
-        api.get("/destinations")
+        api.get("/destinations"),
+        api.get("/auth/users")
       ]);
       setTrips(tripsRes.data.data || []);
       setDestinations(destRes.data.data || []);
+      setUsers(usersRes.data.data || []);
     } catch (error) {
       console.error("Error fetching admin data:", error);
       toast.error("Failed to load dashboard data");
@@ -175,34 +156,17 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     logout();
-    toast.success("Logged out successfully");
+    toast.success("Logged out successfully! 👋");
+    navigate("/");
   };
 
-  const handlePwChange = async (e) => {
-    e.preventDefault();
-    if (!pwForm.currentPassword || !pwForm.newPassword || !pwForm.confirmPassword)
-      return toast.error("All fields are required");
-    if (pwForm.newPassword.length < 6)
-      return toast.error("New password must be at least 6 characters");
-    if (pwForm.newPassword !== pwForm.confirmPassword)
-      return toast.error("Passwords do not match");
-    setPwLoading(true);
-    try {
-      await api.put("/auth/password", { currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
-      toast.success("Password changed successfully! 🔐");
-      setPwForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to change password");
-    } finally { setPwLoading(false); }
-  };
-
-  const tabs = ["overview", "destinations", "trips", "reports", "settings"];
+  const tabs = ["overview", "destinations", "trips", "users", "reports"];
   const tabLabels = {
     overview: "Overview",
     destinations: "Destinations",
     trips: "All Trips",
+    users: "Users",
     reports: "Reports",
-    settings: "Settings",
   };
 
   if (loading) {
@@ -251,12 +215,17 @@ export default function AdminDashboard() {
 
         {/* Right */}
         <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-2">
-            <span className="text-sm text-slate-300">{user?.name || "Admin"}</span>
+          {/* Clickable profile */}
+          <button
+            onClick={() => navigate("/admin/profile")}
+            className="hidden sm:flex items-center gap-2 hover:opacity-80 transition-opacity group"
+          >
             <div className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-bold shadow-inner">
               {(user?.name || "A").charAt(0).toUpperCase()}
             </div>
-          </div>
+            <span className="text-sm text-slate-300 group-hover:text-white transition-colors">{user?.name || "Admin"}</span>
+            <UserCircle size={14} className="text-teal-400 opacity-60" />
+          </button>
           <button 
             onClick={handleLogout}
             className="flex items-center gap-2 text-slate-400 hover:text-red-400 transition-colors text-sm font-medium"
@@ -436,7 +405,7 @@ export default function AdminDashboard() {
                 {destinations.filter(d => d.destinationName?.toLowerCase().includes(destSearchQuery.toLowerCase())).map((dest) => (
                   <div key={dest._id} className="h-72 rounded-2xl overflow-hidden relative cursor-pointer group animate-slideUp">
                     <img 
-                      src={getDestinationImage(dest.destinationName)} 
+                      src={dest.imageUrl || getDestinationImage(dest.destinationName)} 
                       alt={dest.destinationName}
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
@@ -620,6 +589,73 @@ export default function AdminDashboard() {
                     return matchesSearch && matchesFilter;
                   }).length} of {trips.length} trips
                 </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ==================================================== */}
+        {/* USERS TAB */}
+        {/* ==================================================== */}
+        {activeTab === "users" && (
+          <div className="animate-fadeIn">
+            <div className="flex items-center mb-6">
+              <h1 className="text-2xl font-bold text-white">All Users</h1>
+              <span className="bg-teal-500/20 text-teal-300 rounded-full px-2 py-0.5 text-sm ml-3 font-medium">
+                {users.length}
+              </span>
+            </div>
+
+            <div className="bg-slate-800/40 rounded-2xl border border-white/5 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-700/30 text-xs uppercase tracking-wider text-slate-500">
+                    <tr>
+                      <th className="px-6 py-4 font-medium">Name</th>
+                      <th className="px-6 py-4 font-medium">Email</th>
+                      <th className="px-6 py-4 font-medium">Trips Created</th>
+                      <th className="px-6 py-4 font-medium">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" className="px-6 py-16 text-center">
+                          <p className="text-slate-400">No users found</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      users.map((u, idx) => (
+                        <tr key={u._id} className={`hover:bg-teal-500/5 transition-colors border-b border-white/5 last:border-0 ${idx % 2 !== 0 ? 'bg-slate-800/20' : ''}`}>
+                          <td className="px-6 py-4 whitespace-nowrap text-white font-medium flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                              {(u.name || "U").charAt(0).toUpperCase()}
+                            </div>
+                            {u.name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-slate-300">{u.email}</td>
+                          <td className="px-6 py-4 text-slate-300 max-w-xs">
+                            {u.tripCount > 0 ? (
+                              <div className="flex flex-col gap-1.5">
+                                <span className="bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded-md font-medium inline-block w-fit mb-1">{u.tripCount} trips</span>
+                                <div className="flex flex-wrap gap-1">
+                                  {u.trips?.map((t, i) => (
+                                    <span key={i} className="bg-slate-700/50 text-slate-300 text-xs px-2 py-1 rounded border border-white/5 truncate max-w-[150px]" title={t.tripName}>
+                                      {t.tripName}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-slate-500">0</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-slate-400">{formatDate(u.createdAt)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -873,73 +909,7 @@ export default function AdminDashboard() {
 
       </main>
 
-      {/* SETTINGS TAB — rendered outside main for clean layout */}
-      {activeTab === "settings" && (
-        <main className="pt-24 lg:pt-20 px-4 sm:px-6 pb-8 max-w-3xl mx-auto min-h-screen">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Settings</h1>
-            <p className="text-slate-400 mt-1">Manage your admin account security</p>
-          </div>
 
-          {/* Admin Info Card */}
-          <div className="mt-8 bg-slate-800/60 border border-white/10 rounded-2xl p-6 flex items-center gap-5">
-            <div className="w-16 h-16 rounded-full bg-teal-600 flex items-center justify-center text-white text-2xl font-bold shadow-inner shrink-0">
-              {(user?.name || "A").charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <p className="text-white font-bold text-lg">{user?.name || "Admin"}</p>
-              <p className="text-slate-400 text-sm">{user?.email || ""}</p>
-              <span className="mt-1 inline-flex items-center gap-1 text-xs bg-teal-500/20 text-teal-400 border border-teal-500/30 px-2.5 py-0.5 rounded-full">
-                <Settings size={11} /> Admin Account
-              </span>
-            </div>
-          </div>
-
-          {/* Change Password Card */}
-          <div className="mt-6 bg-slate-800/60 border border-white/10 rounded-2xl p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <Lock className="w-5 h-5 text-teal-400" />
-              <h2 className="text-white font-bold text-lg">Change Password</h2>
-            </div>
-            <form onSubmit={handlePwChange} className="space-y-4">
-              {[
-                { key: "currentPassword", label: "Current Password", showKey: "current" },
-                { key: "newPassword",     label: "New Password",     showKey: "new" },
-                { key: "confirmPassword", label: "Confirm New Password", showKey: "confirm" },
-              ].map(({ key, label, showKey }) => (
-                <div key={key}>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">{label}</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input
-                      type={showPw[showKey] ? "text" : "password"}
-                      value={pwForm[key]}
-                      onChange={(e) => setPwForm((p) => ({ ...p, [key]: e.target.value }))}
-                      placeholder="••••••••"
-                      className="w-full bg-slate-900 border border-slate-700 text-white placeholder-slate-500 rounded-xl pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPw((p) => ({ ...p, [showKey]: !p[showKey] }))}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                    >
-                      {showPw[showKey] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-              ))}
-              <button
-                type="submit"
-                disabled={pwLoading}
-                className="flex items-center gap-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 active:scale-95 text-white px-6 py-3 rounded-xl text-sm font-medium transition-all"
-              >
-                {pwLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Change Password
-              </button>
-            </form>
-          </div>
-        </main>
-      )}
 
       {/* DESTINATION MODAL */}
       <DestinationModal

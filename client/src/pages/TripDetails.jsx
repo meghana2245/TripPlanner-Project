@@ -13,14 +13,7 @@ import BookingModal from "../components/BookingModal";
 import PageTransition from "../components/PageTransition";
 import { usePageTitle } from "../hooks/usePageTitle";
 
-const IMAGES = [
-  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80",
-  "https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=800&q=80",
-  "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=800&q=80",
-  "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&q=80",
-  "https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=800&q=80",
-  "https://images.unsplash.com/photo-1488085061387-422e29b40080?w=800&q=80",
-];
+import { getDestinationImage } from "../utils/getDestinationImage";
 
 const fmt = (d) =>
   new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -119,7 +112,7 @@ export default function TripDetails() {
   const remaining = budget - totalSpent;
   const overBudget = remaining < 0;
 
-  const heroImage = trip ? IMAGES[parseInt(trip._id.slice(-1), 16) % IMAGES.length] : IMAGES[0];
+  const heroImage = trip?.imageUrl || getDestinationImage(trip?.destination);
 
   if (loading) {
     return (

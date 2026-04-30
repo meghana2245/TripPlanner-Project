@@ -12,14 +12,7 @@ const destinationSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    recommendedPlaces: {
-      type: [String],
-      default: [],
-    },
-    destinationActivities: {
-      type: [String],
-      default: [],
-    },
+
     sampleItinerary: {
       type: [
         {

@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [trips, setTrips] = useState([]);
+  const [destinations, setDestinations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTrip, setEditTrip] = useState(null);
@@ -24,16 +25,20 @@ export default function Dashboard() {
   const [preDestination, setPreDestination] = useState("");
   const [preDestinationId, setPreDestinationId] = useState("");
 
-  const fetchTrips = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get("/trips");
-      setTrips(res.data.data || []);
+      const [tripsRes, destsRes] = await Promise.all([
+        api.get("/trips"),
+        api.get("/destinations")
+      ]);
+      setTrips(tripsRes.data.data || []);
+      setDestinations(destsRes.data.data || []);
     } catch { /* silent */ }
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchTrips(); }, [fetchTrips]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   // Open modal with pre-seeded destination if query params exist
   useEffect(() => {
@@ -66,7 +71,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-slate-900">
       <Navbar />
-      <UpcomingTripBanner trips={trips} />
+      <UpcomingTripBanner trips={trips} destinations={destinations} />
 
       <PageTransition>
         {/* Hero */}
@@ -121,7 +126,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {trips.map((trip, i) => (
                 <div key={trip._id} className="animate-slideUp" style={{ animationDelay: `${i * 0.08}s` }}>
-                  <TripCard trip={trip} index={i} onEdit={openEdit} onDelete={handleDelete} />
+                  <TripCard trip={trip} onEdit={openEdit} onDelete={handleDelete} destinations={destinations} />
                 </div>
               ))}
             </div>
@@ -137,7 +142,7 @@ export default function Dashboard() {
       <TripModal
         isOpen={modalOpen}
         onClose={handleClose}
-        onSuccess={fetchTrips}
+        onSuccess={fetchData}
         existingTrip={editTrip}
         preDestination={preDestination}
         preDestinationId={preDestinationId}

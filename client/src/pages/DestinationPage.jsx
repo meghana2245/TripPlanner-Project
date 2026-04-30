@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, MapPin, ArrowRight, Plane, Zap } from "lucide-react";
+import { Search, ArrowRight, Plane } from "lucide-react";
 import { toast } from "sonner";
 import api from "../services/api";
 import Navbar from "../components/Navbar";
@@ -8,20 +8,7 @@ import SkeletonCard from "../components/SkeletonCard";
 import PageTransition from "../components/PageTransition";
 import { useAuth } from "../context/AuthContext";
 import { usePageTitle } from "../hooks/usePageTitle";
-
-const DEST_IMAGES = {
-  default: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&q=80",
-  Goa: "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=800&q=80",
-  Paris: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&q=80",
-  Tokyo: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80",
-  "New York": "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800&q=80",
-  Bali: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80",
-};
-
-const getDestImage = (name = "") => {
-  const key = Object.keys(DEST_IMAGES).find((k) => name.toLowerCase().includes(k.toLowerCase()));
-  return key ? DEST_IMAGES[key] : DEST_IMAGES.default;
-};
+import { getDestinationImage } from "../utils/getDestinationImage";
 
 export default function DestinationPage() {
   usePageTitle("Explore Destinations");
@@ -93,45 +80,11 @@ export default function DestinationPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filtered.map((d, i) => (
                   <div key={d._id} className="group relative rounded-2xl overflow-hidden h-80 transition-transform duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-black/40 animate-slideUp cursor-pointer" style={{ animationDelay: `${i * 0.06}s` }} onClick={() => handleViewDetail(d._id)}>
-                    <div className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" style={{ backgroundImage: `url(${getDestImage(d.destinationName)})` }} />
+                    <div className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" style={{ backgroundImage: `url(${d.imageUrl || getDestinationImage(d.destinationName)})` }} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
                     <div className="absolute bottom-0 left-0 right-0 p-6">
                       <h3 className="text-white font-bold text-2xl mb-1">{d.destinationName}</h3>
                       <p className="text-slate-300 text-sm line-clamp-2 mb-3">{d.description}</p>
-                      {(d.recommendedPlaces || []).length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-3">
-                          {d.recommendedPlaces.slice(0, 3).map((p) => (
-                            <span key={p} className="text-xs bg-white/10 backdrop-blur-sm text-slate-200 border border-white/20 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <MapPin className="w-2.5 h-2.5 text-teal-400" />{p}
-                            </span>
-                          ))}
-                          {d.recommendedPlaces.length > 3 && <span className="text-xs text-slate-400">+{d.recommendedPlaces.length - 3} more</span>}
-                        </div>
-                      )}
-
-                      {/* Destination Activities */}
-                      {d.destinationActivities && d.destinationActivities.length > 0 && (
-                        <>
-                          <div className="border-t border-white/10 my-3" />
-                          <p className="text-xs text-slate-400 mb-2 flex items-center gap-1">
-                            <Zap size={12} className="text-orange-400" />
-                            Things to do:
-                          </p>
-                          <div className="flex flex-wrap gap-1.5 mb-4">
-                            {d.destinationActivities.slice(0, 4).map((act) => (
-                              <span key={act} className="bg-orange-500/15 text-orange-300 border border-orange-500/25 rounded-full px-2.5 py-0.5 text-xs">
-                                {act}
-                              </span>
-                            ))}
-                            {d.destinationActivities.length > 4 && (
-                              <span className="bg-slate-700/60 text-slate-400 border border-slate-600/30 rounded-full px-2.5 py-0.5 text-xs">
-                                +{d.destinationActivities.length - 4} more
-                              </span>
-                            )}
-                          </div>
-                        </>
-                      )}
-
                       <button onClick={(e) => { e.stopPropagation(); handlePlanTrip(d.destinationName, d._id); }} className="flex items-center gap-2 bg-teal-600 hover:bg-teal-500 active:scale-95 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-all">
                         Plan a Trip Here <ArrowRight className="w-4 h-4" />
                       </button>
